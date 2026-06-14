@@ -339,18 +339,6 @@ class _UIAProvider:
             pass
         return False
 
-    def get_focused_element_bounds(self) -> Optional[Tuple[int, int, int, int]]:
-        """Return bounds of the currently focused element, if any."""
-        uia = self._ensure_uia()
-        try:
-            focused = uia.GetFocusedControl()
-            if focused and focused.BoundingRectangle:
-                r = focused.BoundingRectangle
-                return r.left, r.top, r.right - r.left, r.bottom - r.top
-        except Exception:
-            pass
-        return None
-
 
 # ---------------------------------------------------------------------------
 # PyAutoGUI mouse / keyboard provider
@@ -479,17 +467,15 @@ class WinComputerUseBackend(ComputerUseBackend):
         self._scale: float = float(scale_str) if scale_str else _get_scale_factor()
         self._uia = _UIAProvider()
         self._pg = _PyAutoGUIProvider(scale=self._scale)
-        self._started = False
         self._element_cache: Dict[int, Tuple[Dict[str, Any], Any]] = {}
 
     # ── Lifecycle ───────────────────────────────────────────────────
 
     def start(self) -> None:
-        self._started = True
+        pass
 
     def stop(self) -> None:
         self._element_cache.clear()
-        self._started = False
 
     def is_available(self) -> bool:
         return _is_windows() and _check_pyautogui() and _check_uiautomation() and _check_pillow()
@@ -651,6 +637,8 @@ class WinComputerUseBackend(ComputerUseBackend):
     # ── Keyboard ────────────────────────────────────────────────────
 
     def type_text(self, text: str) -> ActionResult:
+        # NOTE: pyautogui.typewrite only supports ASCII characters.
+        # Non-ASCII input (CJK, accented chars, etc.) requires clipboard paste.
         self._pg.typewrite(text)
         return ActionResult(ok=True, action="type",
                            message=f"typed {len(text)} chars")
@@ -773,7 +761,12 @@ def _draw_som_overlay(
             th = tb[3] - tb[1]
         except AttributeError:
             # Pillow < 8.0 fallback
-            tw, th = font.getsize(label)
+            try:
+                tb = font.getbbox(label)
+                tw = tb[2] - tb[0]
+                th = tb[3] - tb[1]
+            except AttributeError:
+                tw, th = font.getsize(label)
         lx = x + 2
         ly = max(0, y - th - 2)
         draw.rectangle([lx, ly, lx + tw + 4, ly + th + 2], fill=(0, 0, 0, 200))
@@ -809,33 +802,6 @@ _KEY_MAP: Dict[str, str] = {
     "escape": "esc",
     "pageup": "pgup",
     "pagedown": "pgdn",
-    "capslock": "capslock",
-    "backspace": "backspace",
-    "delete": "delete",
-    "tab": "tab",
-    "space": "space",
-    "up": "up",
-    "down": "down",
-    "left": "left",
-    "right": "right",
-    "home": "home",
-    "end": "end",
-    "insert": "insert",
-    "printscreen": "printscreen",
-    "scrolllock": "scrolllock",
-    "pause": "pause",
-    "f1": "f1",
-    "f2": "f2",
-    "f3": "f3",
-    "f4": "f4",
-    "f5": "f5",
-    "f6": "f6",
-    "f7": "f7",
-    "f8": "f8",
-    "f9": "f9",
-    "f10": "f10",
-    "f11": "f11",
-    "f12": "f12",
 }
 
 
