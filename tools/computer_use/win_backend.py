@@ -6,10 +6,10 @@ widely-available open-source libraries:
   * **pyautogui**     — screenshot, mouse-move/click/drag/scroll, keyboard
   * **Pillow**        — PNG encoding, SOM overlay drawing (idx boxes + labels)
   * **uiautomation**  — enumerate interactable elements (UIA tree), app list,
-                        window focus
+                        window focus (Windows-only)
 
-All three are cross-platform / pure Python with pre-built wheels on PyPI
-for every supported Windows version (8.1+). No external binary drivers.
+All three have pre-built wheels on PyPI for Windows 8.1+. No external
+binary drivers.
 """
 
 from __future__ import annotations
@@ -80,7 +80,6 @@ def _get_scale_factor() -> float:
         user32 = ctypes.windll.user32
         # Windows 10 1607+: GetDpiForWindow(GetDesktopWindow())
         hwnd = user32.GetDesktopWindow()
-        dpi = ctypes.c_uint()
         # prefer GetDpiForWindow (Win 10 1607+)
         try:
             _GetDpiForWindow = user32.GetDpiForWindow
@@ -90,7 +89,6 @@ def _get_scale_factor() -> float:
         except AttributeError:
             # Fallback to GetDeviceCaps + LOGPIXELSX for older Windows
             hdc = user32.GetDC(0)
-            import ctypes.wintypes
             LOGPIXELSX = 88
             dpi_val = ctypes.windll.gdi32.GetDeviceCaps(hdc, LOGPIXELSX)
             user32.ReleaseDC(0, hdc)
@@ -373,8 +371,8 @@ class _PyAutoGUIProvider:
         if self._pg is not None:
             return self._pg
         import pyautogui as pg
-        pg.FAILSAFE = False
-        pg.PAUSE = 0.0
+        pg.FAILSAFE = os.environ.get("HERMES_CU_FAILSAFE", "").lower() not in ("1", "true", "yes")
+        pg.PAUSE = float(os.environ.get("HERMES_CU_PAUSE", "0"))
         self._pg = pg
         return pg
 
@@ -471,6 +469,8 @@ class WinComputerUseBackend(ComputerUseBackend):
     Environment variables
     ---------------------
     ``HERMES_CU_WIN_SCALE`` — force DPI scale factor (float; default auto-detect)
+    ``HERMES_CU_FAILSAFE``  — set "1"/"true"/"yes" to enable pyautogui failsafe (default off)
+    ``HERMES_CU_PAUSE``     — pyautogui pause between actions in seconds (default 0)
     """
 
     def __init__(self) -> None:
@@ -599,8 +599,6 @@ class WinComputerUseBackend(ComputerUseBackend):
         if fx is None or fy is None or tx is None or ty is None:
             return ActionResult(ok=False, action="drag",
                                message="missing drag target")
-        if from_xy and fx is not None and fy is not None:
-            self._pg.move_to(fx, fy)
         if modifiers:
             for m in modifiers:
                 self._pg.keyDown(m)
@@ -629,16 +627,17 @@ class WinComputerUseBackend(ComputerUseBackend):
             return ActionResult(ok=False, action="scroll",
                                message="no scroll target")
 
-        clicks = amount if direction in ("up", "left") else -amount
+        v_clicks = amount if direction == "up" else -amount
+        h_clicks = amount if direction == "right" else -amount
         if modifiers:
             for m in modifiers:
                 self._pg.keyDown(m)
             _time.sleep(0.02)
         try:
             if direction in ("down", "up"):
-                self._pg.scroll(clicks, px, py)
+                self._pg.scroll(v_clicks, px, py)
             elif direction in ("left", "right"):
-                self._pg.hscroll(clicks, px, py)
+                self._pg.hscroll(h_clicks, px, py)
             else:
                 return ActionResult(ok=False, action="scroll",
                                    message=f"unknown direction: {direction}")

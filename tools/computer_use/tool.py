@@ -132,7 +132,7 @@ def _get_backend() -> ComputerUseBackend:
     global _backend
     with _backend_lock:
         if _backend is None:
-            backend_name = os.environ.get("HERMES_COMPUTER_USE_BACKEND", "auto").lower()
+            backend_name = os.environ.get("HERMES_COMPUTER_USE_BACKEND", "auto").lower() or "auto"
             if backend_name in {"cua", "cua-driver", "auto"}:
                 if backend_name in {"cua", "cua-driver"} or sys.platform == "darwin":
                     from tools.computer_use.cua_backend import CuaDriverBackend
