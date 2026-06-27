@@ -1030,7 +1030,24 @@ def web_search_tool(query: str, limit: int = 5, search_engine: str = "auto") -> 
                 ),
             }
         elif errors:
-            # Attach fallback trace for observability
+            # Build human-readable fallback path so the model can report
+            # which backends were tried and which one ultimately returned results.
+            failed_names = [e.split(":", 1)[0].strip() for e in errors]
+            winner = chain[len(failed_names)]
+            if len(failed_names) == 1:
+                path_note = (
+                    f'Search started with "{failed_names[0]}" '
+                    f'(returned 0 results or failed) and ultimately '
+                    f'succeeded via "{winner}".'
+                )
+            else:
+                tried_list = ", ".join(f'"{n}"' for n in failed_names)
+                path_note = (
+                    f'Search attempted {tried_list} '
+                    f'(each returned 0 results or failed) and ultimately '
+                    f'succeeded via "{winner}".'
+                )
+            response_data.setdefault("_fallback_path", path_note)
             response_data.setdefault("_fallback_trace", errors)
 
         debug_call_data["results_count"] = len(response_data.get("data", {}).get("web", []))
