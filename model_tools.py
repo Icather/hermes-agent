@@ -199,7 +199,7 @@ discover_builtin_tools()
 # Plugin tool discovery (user/project/pip plugins)
 try:
     from hermes_cli.plugins import discover_plugins
-    discover_plugins()
+    discover_plugins(force=True)
 except Exception as e:
     logger.debug("Plugin discovery failed: %s", e)
 

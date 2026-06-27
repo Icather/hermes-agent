@@ -5879,7 +5879,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
         # guaranteed to have run by the time we reach this point.
         try:
             from hermes_cli.plugins import discover_plugins
-            discover_plugins()
+            discover_plugins(force=True)
         except Exception:
             logger.warning(
                 "plugin discovery failed at gateway startup", exc_info=True,
