@@ -168,6 +168,16 @@ def _get_backend() -> str:
         ("searxng", _has_env("SEARXNG_URL")),
         ("brave-free", _has_env("BRAVE_SEARCH_API_KEY")),
         ("ddgs", _ddgs_package_importable()),
+        # Community-contributed backends (PR #53149)
+        ("baidu", _has_env("BAIDU_API_KEY")),
+        ("serpapi", _has_env("SERPAPI_API_KEY")),
+        ("serper", _has_env("SERPER_API_KEY")),
+        ("bocha", _has_env("BOCHA_API_KEY")),
+        ("qiniu-baidu", _has_env("QINIU_API_KEY") or _has_env("BAIDU_API_KEY")),
+        ("google-cse", _has_env("GOOGLE_API_KEY")),
+        ("sogou", _has_env("SOGOU_API_KEY")),
+        ("360-search", _has_env("360_API_KEY")),
+        ("jina", _has_env("JINA_API_KEY")),
     )
     for backend, available in backend_candidates:
         if available:

@@ -127,6 +127,16 @@ _LEGACY_PREFERENCE = (
     "searxng",
     "brave-free",
     "ddgs",
+    # Community-contributed backends (PR #53149)
+    "baidu",
+    "serpapi",
+    "serper",
+    "bocha",
+    "qiniu-baidu",
+    "google-cse",
+    "sogou",
+    "360-search",
+    "jina",
 )
 
 
